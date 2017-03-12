@@ -1,4 +1,4 @@
-# git-sign: sign Git commits securely
+# git-sign: sign files in Git repositories securely
 
 While Git supports signing via `git tag -s` (or `git tag -u`), those
 are signing SHA-1 hashes only as of today, hence a bit insecure given
