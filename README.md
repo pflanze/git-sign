@@ -11,11 +11,14 @@ attacks easier).
 `git-sign` is a wrapper that adds SHA-256 hashes of all files to the
 tag message in a way that can either be verified manually (the code
 used to generate the hashes is added to the tag message as well), or
-automatically using `verify-sig`.
+automatically using `verify-sig`. For an example tag message, see
+[the git-sign v1 tag](https://github.com/pflanze/git-sign/releases/tag/v1),
+or run `git clone https://github.com/pflanze/git-sign; cd git-sign;
+git cat-file -p v1`.
 
 The two programs are simple bash scripts so that you can verify their
-source code easily. Also, the signed tags mention the code to run,
-hence users can verify them without even installing verify-sig.
+source code easily. Also, the signed tag messages mention the code to
+run, hence users can verify them without even installing verify-sig.
 
 Note that while this ensures that the checked-out files (in the
 working directory) are of identical number and content as those the
