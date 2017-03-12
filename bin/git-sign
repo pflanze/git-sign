@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -euo pipefail
+
+usage () {
+    echo "usage: $0 tagname [message]"
+    echo "  creates a signed Git tag on the current HEAD that includes"
+    echo "  SHA-256 hashes of all files, plus an indication of how many"
+    echo "  files, for proper security, verifiable manually or"
+    echo "  by 'verify-sig'."
+    echo
+    echo "  Needs to be run in the top level of a git working dir, with"
+    echo "  no changes between the files in HEAD and their checkout."
+    echo
+    echo "  If GITSIGNKEY is set, it is taken as the key id or fingerprint"
+    echo "  to be used for signing."
+    exit 1
+}
+
+if [ $# -lt 1 -o $# -gt 2 ]; then
+    usage
+elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+msg=""
+
+exitnote () {
+    echo "$0: aborting. (Your tag message may be left in $msg)"
+}
+
+trap exitnote EXIT
+
+tagname="$1"
+
+msg=`mktemp`
+
+if [ $# -eq 2 ]; then
+    message="$2"
+    echo "$message" > "$msg"
+else
+    echo "# please write your tag message, then exit (git-sign will append hashes)" > "$msg"
+
+    $EDITOR "$msg"
+    # quotes or not?
+    # Also, tmp file handling by editor?
+fi
+
+fullmsg=`mktemp`
+
+egrep -v '^#' < "$msg" > "$fullmsg"
+
+run () {
+    cmd="$1"
+    echo "\$ $cmd"
+    eval "$cmd"
+}
+
+(
+    echo
+    echo "Secure hashes follow, see https://github.com/pflanze/git-sign/"
+    run 'git ls-files -z | perl -we '\''$/="\0"; $z++ while <STDIN>; print "$z\n"'\'
+    run 'git ls-files -z | xargs -0 --no-run-if-empty -s 129023 -n 129023 sha256sum'
+) >> "$fullmsg"
+
+
+if [ -z "${GITSIGNKEY-}" ]; then
+    git tag -s -F "$fullmsg" --cleanup=whitespace "$tagname"
+else
+    git tag -u "$GITSIGNKEY" -F "$fullmsg" --cleanup=whitespace "$tagname"
+fi
+# ^ give a way to add -f option ?
+
+trap '' EXIT
+
+echo "$0: done."
+
+rm "$msg" "$fullmsg"
+

@@ -1,0 +1,63 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+# remember, *still* need to quote variables!
+
+#set -x
+
+usage () {
+    echo "usage: $0 tagname"
+    echo "  verifies a signed tag, both the tag signature and then any"
+    echo "  SHA-256 hash lists embedded within the tag message (to have"
+    echo "  secure signing while git signatures still only rely on SHA-1)"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+tagname="$1"
+
+exitcode=0
+
+msg=`mktemp`
+git tag -v "$tagname" > "$msg"
+
+numfiles1=`mktemp`
+grep -A1 -E '^\$ git ls-files -z \|.* perl.*\+\+ while' < "$msg" > "$numfiles1"
+numfiles=`mktemp`
+tail -n+2 < "$numfiles1" > "$numfiles"
+
+nsig=`cat "$numfiles"`
+ngit=`git ls-files -z | perl -we '$/="\0"; $z++ while <STDIN>; print "$z\n"'`
+
+if [ "$nsig" = "$ngit" ]; then
+    nums=OK
+else
+    nums="not OK, git shows $ngit files, the signature $nsig"
+    exitcode=1
+fi
+
+hashes1=`mktemp`
+grep -A9999999 -E '^\$ git ls-files -z \|.* sha256sum' < "$msg" > "$hashes1"
+hashes=`mktemp`
+tail -n+2 < "$hashes1" > "$hashes"
+
+if sha256sum -c "$hashes"; then
+    sigs=OK
+else
+    sigs="not OK (differences see above)"
+    exitcode=1
+fi
+
+
+echo "==> number of files: $nums"
+echo "    hash sums: $sigs"
+
+rm "$hashes" "$hashes1" "$numfiles1" "$numfiles" "$msg"
+
+exit "$exitcode"
