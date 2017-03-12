@@ -49,3 +49,14 @@ Only the contents of the files is verified, not their executable
 status. Also, symlinks are resolved before hashing, which may or may
 not be the best idea. Changing these would make the scripts
 considerably more complex, though.
+
+
+## See also
+
+* [git-evtag](https://github.com/cgwalters/git-evtag): much more
+  complex; easy verifiability of the source code of the checker, or
+  even just manual checking, was the aim for git-sign.
+
+* [git-secure-tag](https://github.com/indutny/git-secure-tag): in
+  Node.js, also much more complex.
+
