@@ -9,16 +9,28 @@ would be needed), but given the right circumstances could still make
 attacks easier).
 
 `git-sign` is a wrapper that adds SHA-256 hashes of all files to the
-tag message in a way that can either be verified manually (the code
-used to generate the hashes is added to the tag message as well), or
-automatically using `verify-sig`. For an example tag message, see
-[the git-sign v1 tag](https://github.com/pflanze/git-sign/releases/tag/v1),
-or run `git clone https://github.com/pflanze/git-sign; cd git-sign;
-git cat-file -p v1`.
+tag message. `git-sign` then runs `git tag -s` to create a normal
+signed git tag that just happens to also contain SHA-256 hash sums in
+plain text. For an example tag message, see
+[the git-sign v1 tag](https://github.com/pflanze/git-sign/releases/tag/v1)
+(or run `git clone https://github.com/pflanze/git-sign; cd git-sign;
+git cat-file -p v1`). Since the tag message is part of what the PGP
+signature signs, it cannot be altered, assuming a recent enough
+PGP/GnuPG key. The SHA-256 hashes in the tag message (as well as the
+number of files) can then be verified to be the same as those checked
+out by Git. Hence, content verification does not depend on Git hashes.
+
+`verify-sig` does all of the verification steps of a git tag (it also
+verifies that the PGP signature itself does not use known to be
+insecure hashing algorithms).
 
 The two programs are simple bash scripts so that you can verify their
-source code easily. Also, the signed tag messages mention the code to
-run, hence users can verify them without even installing verify-sig.
+source code easily enough. Also, the signed tag messages mention the
+code that was run to generate them, hence the integrity can be
+verified manually, without even installing verify-sig, by running `git
+tag -v $tagname` then running the two code fragments and comparing the
+output (but note that `git tag` won't verify the hash algorithm used
+by gpg!)
 
 Note that while this ensures that the checked-out files (in the
 working directory) are of identical number and content as those the
@@ -28,6 +40,7 @@ assurance when building a checkout of a signed commit that there's no
 man in the middle, you don't get any assurance that any other commits
 contain what the author committed (not even older commits). For this,
 Git itself has to move to a more secure hashing algorithm.
+
 
 ## Usage
 
@@ -50,6 +63,15 @@ Git itself has to move to a more secure hashing algorithm.
   you want to verify, e.g. with `git checkout -b v10 v10` (or just
   `git checkout v10` if you're not confused by working with a detached
   HEAD).
+
+
+## Dependencies
+
+Both scripts are relying on `git` and `gpg`, as well as `sha256sum`
+and various other utilities from the GNU core utilities
+(e.g. `coreutils` package on Debian), `egrep` from the GNU grep
+package, and `perl`. Except for `git` and `gpg` these should be
+available in the minimal install of standard Linux distributions.
 
 
 ## TODO?
