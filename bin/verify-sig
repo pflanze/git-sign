@@ -24,11 +24,42 @@ tagname="$1"
 
 exitcode=0
 
-msg=`mktemp`
-git tag -v "$tagname" > "$msg"
+tagcontents=`mktemp`
+git cat-file tag "$tagname" > "$tagcontents"
+# (somewhat irritatingly, git cat-file does not accept "--" as option
+# processing terminator)
+
+tagbase=`mktemp -d`
+grep -A9999 -E '^-----BEGIN PGP SIGNATURE-----$' < "$tagcontents" > "$tagbase"/tagmessage.sig
+siglen=`wc -l < "$tagbase"/tagmessage.sig`
+tac < "$tagcontents" | tail -n+$(( $siglen + 1 )) | tac > "$tagbase"/tagmessage
+
+echo "(1) Verifying PGP signature"
+(
+    set -euo pipefail
+    cd "$tagbase"
+    # sorry, have to ignore your language settings
+    LANG=C gpg -v --verify tagmessage.sig 2>&1 | tee out
+)
+
+if egrep -q "digest algorithm (SHA1|MD5)\b" "$tagbase"/out; then
+    echo "$0: insecure digest algorithm, aborting!"
+    exit 1
+fi
+
+# Bash should have terminated above if gpg in the subshell didn't
+# succeed already; but be paranoid:
+if ! egrep -q "gpg: Good signature" "$tagbase"/out; then
+    echo "$0: missing 'Good signature', BUG, aborting!"
+    exit 1
+fi
+
+
+echo
+echo "(2) Verifying git-sign message"
 
 numfiles1=`mktemp`
-grep -A1 -E '^\$ git ls-files -z \|.* perl.*\+\+ while' < "$msg" > "$numfiles1"
+grep -A1 -E '^\$ git ls-files -z \|.* perl.*\+\+ while' < "$tagbase"/tagmessage > "$numfiles1"
 numfiles=`mktemp`
 tail -n+2 < "$numfiles1" > "$numfiles"
 
@@ -38,26 +69,27 @@ ngit=`git ls-files -z | perl -we '$/="\0"; $z++ while <STDIN>; print "$z\n"'`
 if [ "$nsig" = "$ngit" ]; then
     nums=OK
 else
-    nums="not OK, git shows $ngit files, the signature $nsig"
+    nums="NOT OK, git shows $ngit files, the message $nsig"
     exitcode=1
 fi
 
 hashes1=`mktemp`
-grep -A9999999 -E '^\$ git ls-files -z \|.* sha256sum' < "$msg" > "$hashes1"
+grep -A9999999 -E '^\$ git ls-files -z \|.* sha256sum' < "$tagbase"/tagmessage > "$hashes1"
 hashes=`mktemp`
 tail -n+2 < "$hashes1" > "$hashes"
 
 if sha256sum -c "$hashes"; then
     sigs=OK
 else
-    sigs="not OK (differences see above)"
+    sigs="NOT OK (differences see above)"
     exitcode=1
 fi
 
-
+echo
 echo "==> number of files: $nums"
 echo "    hash sums: $sigs"
 
-rm "$hashes" "$hashes1" "$numfiles1" "$numfiles" "$msg"
+rm "$hashes" "$hashes1" "$numfiles1" "$numfiles" "$tagcontents"
+rm -rf "$tagbase"
 
 exit "$exitcode"
