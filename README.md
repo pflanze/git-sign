@@ -1,15 +1,21 @@
 # git-sign: sign Git commits securely
 
 While Git supports signing via `git tag -s` (or `git tag -u`), those
-are signing SHA-1 hashes only as of today, hence rather insecure given
-that SHA-1 collisions aren't very expensive. `git-sign` is a wrapper
-that adds SHA-256 hashes of all files to the tag message in a way that
-can either be verified manually (the code used to generate the hashes
-is added to the tag message as well), or automatically using
-`verify-sig`.
+are signing SHA-1 hashes only as of today, hence a bit insecure given
+that SHA-1 collisions aren't very expensive (about $75k according to
+recent [news](https://duckduckgo.com/html/?q=sha-1%20collisions); a
+SHA-1 collision still doesn't allow to MITM directly (pre-image attack
+would be needed), but given the right circumstances could still make
+attacks easier).
+
+`git-sign` is a wrapper that adds SHA-256 hashes of all files to the
+tag message in a way that can either be verified manually (the code
+used to generate the hashes is added to the tag message as well), or
+automatically using `verify-sig`.
 
 The two programs are simple bash scripts so that you can verify their
-code easily.
+source code easily. Also, the signed tags mention the code to run,
+hence users can verify them without even installing verify-sig.
 
 Note that while this ensures that the checked-out files (in the
 working directory) are of identical number and content as those the
