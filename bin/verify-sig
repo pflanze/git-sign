@@ -49,7 +49,7 @@ fi
 
 # Bash should have terminated above if gpg in the subshell didn't
 # succeed already; but be paranoid:
-if ! egrep -q "gpg: Good signature" "$tagbase"/out; then
+if ! egrep -q "^gpg: Good signature" "$tagbase"/out; then
     echo "$0: missing 'Good signature', BUG, aborting!"
     exit 1
 fi
