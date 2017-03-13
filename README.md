@@ -29,17 +29,20 @@ source code easily enough. Also, the signed tag messages mention the
 code that was run to generate them, hence the integrity can be
 verified manually, without even installing verify-sig, by running `git
 tag -v $tagname` then running the two code fragments and comparing the
-output (but note that `git tag` won't verify the hash algorithm used
-by gpg!)
+output (but note that unlike `verify-sig`, `git tag -v` does not (to
+my knowledge) verify what hash algorithm the PGP signature uses!)
 
 Note that while this ensures that the checked-out files (in the
 working directory) are of identical number and content as those the
-author (signatory) had, the Git history might still have been
-subverted by an attacker. In other words, `verify-sig` will give you
-assurance when building a checkout of a signed commit that there's no
-man in the middle, you don't get any assurance that any other commits
-contain what the author committed (not even older commits). For this,
-Git itself has to move to a more secure hashing algorithm.
+author (signatory) had, the Git *history* might still have been
+subverted by an attacker. In other words, `verify-sig` will only give
+you assurance that the current checkout is fine, which is useful
+enough to make secure software releases by using Git tags (with
+`git-sign`), i.e. they can be built by users without risk, but it will
+not give assurance for working with the Git repo arbitrarily. Even the
+commits leading up to one that `verify-sig` confirmed as OK are not
+assured to be pristine. For this, Git itself has to move to a more
+secure hashing algorithm.
 
 
 ## Usage
