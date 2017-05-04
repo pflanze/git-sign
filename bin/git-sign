@@ -48,7 +48,20 @@ fi
 
 fullmsg=`mktemp`
 
-egrep -v '^#' < "$msg" > "$fullmsg"
+exit1isOK () {
+    (
+	set +e
+	"$@"
+	exitcode=$?
+	if [ 0 -eq "$exitcode" -o 1 -eq "$exitcode" ]; then
+	    exit 0
+	else
+	    exit "$exitcode"
+	fi
+    )
+}
+
+exit1isOK egrep -v '^#' < "$msg" > "$fullmsg"
 
 run () {
     cmd="$1"
