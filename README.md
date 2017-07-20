@@ -77,12 +77,13 @@ package, and `perl`. Except for `git` and `gpg` these should be
 available in the minimal install of standard Linux distributions.
 
 
-## TODO?
+## Bugs
 
 Only the contents of the files is verified, not their executable
-status. Also, symlinks are resolved before hashing, which may or may
-not be the best idea. Changing these would make the scripts
-considerably more complex, though.
+status. Also, symlinks are followed before hashing, which in the case
+of symlinks pointing outside the working directory will probably not
+be useful. Changing these would make the scripts considerably more
+complex, though.
 
 
 ## See also
