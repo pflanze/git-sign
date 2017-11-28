@@ -54,6 +54,15 @@ if ! egrep -q "^gpg: Good signature" "$tagbase"/out; then
     exit 1
 fi
 
+# Don't accept good signatures from keys without a trust path
+if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
+    fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
+    echo "$0: Not accepting signatures from keys without a trust path, aborting."
+    echo "$0: Please create a trust path. If you're confident that this key belongs"
+    echo "$0: to the claimed user, sign it via 'gpg --sign-key $fp'."
+    exit 1
+fi
+
 
 echo
 echo "(2) Verifying git-sign message"
