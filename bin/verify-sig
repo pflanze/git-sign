@@ -19,12 +19,16 @@ usage () {
     echo "         without spaces). Alternatively the VERIFY_SIG_ACCEPT_KEYS"
     echo "         env var can be set to the same. If neither is set, any key"
     echo "         on the local keyring that has a trust path is accepted."
+    echo "    --require-accept-keys"
+    echo "         fail unless VERIFY_SIG_ACCEPT_KEYS or --accept-keys is"
+    echo "         given."
     exit 1
 }
 
 
 unset tagname
 acceptkeys=${VERIFY_SIG_ACCEPT_KEYS-}
+requireacceptkeys=0
 
 while [ "${#@}" -gt 0 ]; do
     case "$1" in
@@ -35,6 +39,10 @@ while [ "${#@}" -gt 0 ]; do
 	    shift
 	    acceptkeys="$1"
 	    shift
+	    ;;
+	--require-accept-keys)
+	    shift
+	    requireacceptkeys=1
 	    ;;
 	*)
 	    if [ -n "${tagname-}" ]; then
@@ -48,6 +56,13 @@ done
 
 if [ -z "${tagname-}" ]; then
     usage
+fi
+
+if [ "$requireacceptkeys" -ne 0 ]; then
+    if [ -z "$acceptkeys" ]; then
+	echo "$0: --require-accept-keys was given but neither VERIFY_SIG_ACCEPT_KEYS nor --accept-keys list any keys" # >&2
+	exit 1
+    fi
 fi
 
 
