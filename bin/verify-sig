@@ -130,7 +130,7 @@ error_fprs() {
 if [ -n "$acceptkeys" ]; then
 
     if ! id=$(perl -wne ' BEGIN { $exitcode= 1 }
-           if (($k)=m/using .*key ([A-F0-9]{16,})\b/) { 
+           if (($k)=m/using .*key (?:ID )?([A-F0-9]{8,})\b/) { 
                 print $k or die; 
                 $exitcode=0;
                 exit
@@ -150,9 +150,10 @@ if [ -n "$acceptkeys" ]; then
     if [ "$(grep ^tru: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
 	error_fprs tru
     fi
-    # Is it OK to not accept keys without uid?
-    if [ "$(grep ^uid: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
-	error_fprs uid
+    # Is it OK to accept keys without uid? Thus, not requiring uid,
+    # but check for pub instead.
+    if [ "$(grep ^pub: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
+	error_fprs pub
     fi
 
     if ! ACCEPTKEYS="$acceptkeys" perl -we ' use strict; use warnings FATAL => "uninitialized"; 
