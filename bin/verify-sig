@@ -22,6 +22,11 @@ usage () {
     echo "    --require-accept-keys"
     echo "         fail unless VERIFY_SIG_ACCEPT_KEYS or --accept-keys is"
     echo "         given."
+    echo "    --no-require-trust-path"
+    echo "         do not fail if there is no trust path to the key that made"
+    echo "         the signature. Only use when also using VERIFY_SIG_ACCEPT_KEYS"
+    echo "         or --accept-keys, or when rigidly controlling which keys are"
+    echo "         added to the keyrings."
     exit 1
 }
 
@@ -29,6 +34,7 @@ usage () {
 unset tagname
 acceptkeys=${VERIFY_SIG_ACCEPT_KEYS-}
 requireacceptkeys=0
+require_trust_path=1
 
 while [ "${#@}" -gt 0 ]; do
     case "$1" in
@@ -43,6 +49,10 @@ while [ "${#@}" -gt 0 ]; do
 	--require-accept-keys)
 	    shift
 	    requireacceptkeys=1
+	    ;;
+	--no-require-trust-path)
+	    shift
+	    require_trust_path=0
 	    ;;
 	*)
 	    if [ -n "${tagname-}" ]; then
@@ -98,15 +108,16 @@ if ! egrep -q "^gpg: Good signature" "$tagbase"/out; then
     exit 1
 fi
 
-# Don't accept good signatures from keys without a trust path
-if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
-    fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
-    echo "$0: Not accepting signatures from keys without a trust path, aborting."
-    echo "$0: Please create a trust path. If you're confident that this key belongs"
-    echo "$0: to the claimed user, sign it via 'gpg --sign-key $fp'."
-    exit 1
+if [ "$require_trust_path" -ne 0 ]; then
+    # Don't accept good signatures from keys without a trust path
+    if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
+	fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
+	echo "$0: Not accepting signatures from keys without a trust path, aborting."
+	echo "$0: Please create a trust path. If you're confident that this key belongs"
+	echo "$0: to the claimed user, sign it via 'gpg --sign-key $fp'."
+	exit 1
+    fi
 fi
-
 
 # Verify key to be one of the accepted keys, if specified:
 
