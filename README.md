@@ -48,37 +48,43 @@ secure hashing algorithm.
 ## Usage
 
 * **Prepare**: GnuPG version 1.x still uses SHA1 as signing algorithm
-  by default. This of course would make usage of git-sign moot (it
-  replaces reliance on Git's SHA1 hashes with reliance on GnuPG's SHA1
-  hashs). `verify-sig` checks against this case and warns and aborts
-  if it sees such signatures. Thus, it's necessary to either use GnuPG
-  2, or configure GnuPG 1 to use more secure hashes, which can be done
-  via adding the folloging to `~/.gnupg/gpg.conf` (see
-  [gpg 1 configuration](gpg1configuration.md) for more info):
+    by default. This of course would make usage of git-sign moot (it
+    replaces reliance on Git's SHA1 hashes with reliance on GnuPG's SHA1
+    hashs). `verify-sig` checks against this case and warns and aborts
+    if it sees such signatures. Thus, it's necessary to either use GnuPG
+    2, or configure GnuPG 1 to use more secure hashes, which can be done
+    via adding the folloging to `~/.gnupg/gpg.conf` (see
+    [gpg 1 configuration](gpg1configuration.md) for more info):
   
         personal-digest-preferences SHA256
         cert-digest-algo SHA256
         default-preference-list SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed
 
 * **Sign**: `git-sign v10`, `git-sign v10 "release 10"`,
-  `GITSIGNKEY=04EDB072 git-sign v10`: create a Git tag named `v10` on
-  the current HEAD, adding hashes of all files in the current working
-  directory. See `git-sign -h` for more details. Note that it uses
-  hashes of the files in the working directory, not those stored in
-  Git's HEAD, thus you need to run this on a clean working directory
-  (new files not added to the index don't hurt, but deletions or
-  modifications do). Just run immediately after a `git commit -a`, or
-  verify with `git status` that the working directory is clean.
+    `GITSIGNKEY=04EDB072 git-sign v10`: create a Git tag named `v10` on
+    the current HEAD, adding hashes of all files in the current working
+    directory. See `git-sign -h` for more details. Note that it uses
+    hashes of the files in the working directory, not those stored in
+    Git's HEAD, thus you need to run this on a clean working directory
+    (new files not added to the index don't hurt, but deletions or
+    modifications do). Just run immediately after a `git commit -a`, or
+    verify with `git status` that the working directory is clean.
 
 * **Verify**: `verify-sig v10`: verify the signature and file hashes on
-  the tag `v10`. Similarly to `git-sign`, this assumes that the
-  working directory contains the same files that the tag being checked
-  refers to. Otherwise `verify-sig` will report the files that are
-  different between the tag and HEAD or the working directory. To get
-  clean verification, first check out the version pointed to by the
-  tag that you want to verify, e.g. with `git checkout -b v10 v10` (or
-  just `git checkout v10` if you're not confused by working with a
-  detached HEAD).
+    the tag `v10`. Similarly to `git-sign`, this assumes that the
+    working directory contains the same files that the tag being checked
+    refers to. Otherwise `verify-sig` will report the files that are
+    different between the tag and HEAD or the working directory. To get
+    clean verification, first check out the version pointed to by the
+    tag that you want to verify, e.g. with `git checkout -b v10 v10` (or
+    just `git checkout v10` if you're not confused by working with a
+    detached HEAD).
+    
+    Warning: by default, `verify-sig` does not restrict the keys that
+    are accepted for signatures as long as they are in the local keyring
+    and have a trust path. If you're using `verify-sig` in scripts, you
+    may want to use the `--accept-keys` option or
+    `VERIFY_SIG_ACCEPT_KEYS` env variable. See `verify-sig --help`.
 
 
 ## Dependencies

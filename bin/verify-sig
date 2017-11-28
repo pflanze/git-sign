@@ -8,19 +8,48 @@ IFS=
 
 usage () {
     echo "usage: $0 tagname"
+    echo 
     echo "  verifies a signed tag, both the tag signature and then any"
     echo "  SHA-256 hash lists embedded within the tag message (to have"
     echo "  secure signing while git signatures still only rely on SHA-1)"
+    echo 
+    echo "  Options:"
+    echo "    --accept-keys fp1,fp2,.."
+    echo "         only accept the listed keys (full fingerprints with or"
+    echo "         without spaces). Alternatively the VERIFY_SIG_ACCEPT_KEYS"
+    echo "         env var can be set to the same. If neither is set, any key"
+    echo "         on the local keyring that has a trust path is accepted."
     exit 1
 }
 
-if [ $# -ne 1 ]; then
-    usage
-elif [ "$1" = "-h" -o "$1" = "--help" ]; then
+
+unset tagname
+acceptkeys=${VERIFY_SIG_ACCEPT_KEYS-}
+
+while [ "${#@}" -gt 0 ]; do
+    case "$1" in
+	-h|--help)
+	    usage
+	    ;;
+	--accept-keys)
+	    shift
+	    acceptkeys="$1"
+	    shift
+	    ;;
+	*)
+	    if [ -n "${tagname-}" ]; then
+		usage
+	    fi
+	    tagname="$1"
+	    shift
+	    ;;
+    esac
+done
+
+if [ -z "${tagname-}" ]; then
     usage
 fi
 
-tagname="$1"
 
 exitcode=0
 
@@ -61,6 +90,53 @@ if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
     echo "$0: Please create a trust path. If you're confident that this key belongs"
     echo "$0: to the claimed user, sign it via 'gpg --sign-key $fp'."
     exit 1
+fi
+
+
+# Verify key to be one of the accepted keys, if specified:
+
+error_fprs() {
+    echo "$0: error: expected exactly 1 entry for '$1' in:"
+    cat "$tagbase"/fprs
+    exit 1
+}
+
+if [ -n "$acceptkeys" ]; then
+
+    if ! id=$(perl -wne ' BEGIN { $exitcode= 1 }
+           if (($k)=m/using .*key ([A-F0-9]{16,})\b/) { 
+                print $k or die; 
+                $exitcode=0;
+                exit
+           } 
+           END { exit $exitcode }' < "$tagbase"/out); then
+	echo "$0: could not find 16+ digit key id in gpg output"
+	exit 1
+    fi
+    
+    # retrieve fingerprints for this key:
+    if ! gpg --fingerprint --with-colons "$id" > "$tagbase"/fprs; then
+	echo "$0: failed to retrieve fingerprints for key '$id'"
+	exit 1
+    fi
+
+    # keys might not have a UID, hence also test for 'tru' field (XX: check spec for fields)
+    if [ "$(grep ^tru: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
+	error_fprs tru
+    fi
+    # Is it OK to not accept keys without uid?
+    if [ "$(grep ^uid: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
+	error_fprs uid
+    fi
+
+    if ! ACCEPTKEYS="$acceptkeys" perl -we ' use strict; use warnings FATAL => "uninitialized"; 
+            my %k= map { s/\s//sg; $_=> 1 } split /,/, $ENV{ACCEPTKEYS};
+            my @accepted= grep { $k{$_} } map { chomp; (split /:/)[9] } grep { /^fpr:/ } <STDIN>;
+            exit (@accepted ? 0 : 1)
+    ' < "$tagbase"/fprs; then
+	echo "$0: key id '$id' does not resolve into any fingerprint that is contained in the list: $acceptkeys"
+	exit 1
+    fi
 fi
 
 
