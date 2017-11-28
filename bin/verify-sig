@@ -136,7 +136,7 @@ if [ -n "$acceptkeys" ]; then
                 exit
            } 
            END { exit $exitcode }' < "$tagbase"/out); then
-	echo "$0: could not find 16+ digit key id in gpg output"
+	echo "$0: could not find key id in gpg output"
 	exit 1
     fi
     
