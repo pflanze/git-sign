@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
+myname=$(basename "$0")
+
 usage () {
-    echo "usage: $0 tagname [message]"
+    echo "usage: $myname tagname [message]"
     echo "  creates a signed Git tag on the current HEAD that includes"
     echo "  SHA-256 hashes of all files, plus an indication of how many"
     echo "  files, for proper security, verifiable manually or"
@@ -26,7 +28,7 @@ fi
 msg=""
 
 exitnote () {
-    echo "$0: aborting. (Your tag message may be left in $msg)"
+    echo "$myname: aborting. (Your tag message may be left in $msg)"
 }
 
 trap exitnote EXIT
@@ -69,12 +71,21 @@ run () {
     eval "$cmd"
 }
 
-(
+
+subrepositories=0
+{
     echo
     echo "Secure hashes follow, see https://github.com/pflanze/git-sign/"
     run 'git ls-files -z | perl -we '\''$/="\0"; $z++ while <STDIN>; print "$z\n"'\'
-    run 'git ls-files -z | xargs -0 --no-run-if-empty -s 129023 -n 129023 sha256sum'
-) >> "$fullmsg"
+    if g-ls-files -z | perl -w0ne '$f=$_;chomp $f;exit 1 if -d $f'; then
+	# there are no subrepositories
+	run 'git ls-files -z | xargs -0 --no-run-if-empty -s 129023 -n 129023 sha256sum'
+    else
+	# ignore subrepositories
+	subrepositories=1
+	run 'git ls-files -z | perl -w0ne '\''$f=$_;chomp $f;print if!-d $f'\'' | xargs -0 --no-run-if-empty -s 129023 -n 129023 sha256sum'
+    fi
+} >> "$fullmsg"
 
 
 if [ -z "${GITSIGNKEY-}" ]; then
@@ -86,7 +97,12 @@ fi
 
 trap '' EXIT
 
-echo "$0: done."
+echo "$myname: done."
+
+if [ "$subrepositories" = 1 ]; then
+    echo "$myname: NOTE: you may want to sign these subrepositories as well:"
+    git ls-files -z | perl -w0ne '$f=$_; chomp $f; print "  $f\n" if -d $f'
+fi
 
 rm "$msg" "$fullmsg"
 
