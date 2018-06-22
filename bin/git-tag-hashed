@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+function usage {
+    echo "usage: $0 tagname"
+    echo
+    echo "  Shows tagname with a secure hash that addresses "
+    echo "  the contents of the git repository with better security "
+    echo "  than Git's own SHA-1 hashes."
+    echo
+    exit 1
+}
+
+if [ $# -ne 1 ]; then usage; fi
+if [ "$1" = "-h" -o "$1" = "--help" ]; then usage; fi
+
+tagname="$1"
+
+tag=$(git cat-file -p "$tagname")
+
+header=$( echo "$tag" | take-while-re --invert '^$' )
+
+if echo "$header" | egrep -q '^tag '; then
+
+    hash=$( echo "$tag" \
+	| take-while-re --invert '^-----BEGIN PGP SIGNATURE-----$' \
+	| sha256sum \
+	| cut -c1-64)
+
+    echo "$tagname:$hash"
+
+else
+    echo "$0: does not name an annotated or signed tag: '$tagname'" >&2
+    exit 1
+fi
