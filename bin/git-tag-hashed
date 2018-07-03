@@ -3,8 +3,10 @@
 set -euo pipefail
 IFS=
 
-function usage {
-    echo "usage: $0 tagname"
+myname=$(basename "$0")
+
+usage () {
+    echo "usage: $myname tagname"
     echo
     echo "  Shows tagname with a secure hash that addresses "
     echo "  the contents of the git repository with better security "
@@ -32,6 +34,6 @@ if echo "$header" | egrep -q '^tag '; then
     echo "$tagname:$hash"
 
 else
-    echo "$0: does not name an annotated or signed tag: '$tagname'" >&2
+    echo "$myname: does not name an annotated or signed tag: '$tagname'" >&2
     exit 1
 fi

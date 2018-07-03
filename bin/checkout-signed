@@ -5,7 +5,7 @@ IFS=
 
 myname=$(basename "$0")
 
-usage() {
+usage () {
     echo "usage: $myname tagname:hash"
     echo
     echo "  tagname:hash is in the same format as printed by git-tag-hashed"

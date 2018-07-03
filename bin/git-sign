@@ -6,6 +6,7 @@ myname=$(basename "$0")
 
 usage () {
     echo "usage: $myname tagname [message]"
+    echo 
     echo "  creates a signed Git tag on the current HEAD that includes"
     echo "  SHA-256 hashes of all files, plus an indication of how many"
     echo "  files, for proper security, verifiable manually or"

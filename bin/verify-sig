@@ -6,8 +6,10 @@ IFS=
 
 #set -x
 
+myname=$(basename "$0")
+
 usage () {
-    echo "usage: $0 tagname"
+    echo "usage: $myname tagname"
     echo 
     echo "  verifies a signed tag, both the tag signature and then any"
     echo "  SHA-256 hash lists embedded within the tag message (to have"
@@ -70,7 +72,7 @@ fi
 
 if [ "$requireacceptkeys" -ne 0 ]; then
     if [ -z "$acceptkeys" ]; then
-	echo "$0: --require-accept-keys was given but neither VERIFY_SIG_ACCEPT_KEYS nor --accept-keys list any keys" # >&2
+	echo "$myname: --require-accept-keys was given but neither VERIFY_SIG_ACCEPT_KEYS nor --accept-keys list any keys" # >&2
 	exit 1
     fi
 fi
@@ -97,14 +99,14 @@ echo "(1) Verifying PGP signature"
 )
 
 if egrep -q "digest algorithm (SHA1|MD5)\b" "$tagbase"/out; then
-    echo "$0: insecure digest algorithm, aborting!"
+    echo "$myname: insecure digest algorithm, aborting!"
     exit 1
 fi
 
 # Bash should have terminated above if gpg in the subshell didn't
 # succeed already; but be paranoid:
 if ! egrep -q "^gpg: Good signature" "$tagbase"/out; then
-    echo "$0: missing 'Good signature', BUG, aborting!"
+    echo "$myname: missing 'Good signature', BUG, aborting!"
     exit 1
 fi
 
@@ -112,9 +114,9 @@ if [ "$require_trust_path" -ne 0 ]; then
     # Don't accept good signatures from keys without a trust path
     if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
 	fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
-	echo "$0: Not accepting signatures from keys without a trust path, aborting."
-	echo "$0: Please create a trust path. If you're confident that this key belongs"
-	echo "$0: to the claimed user, sign it via 'gpg --sign-key $fp'."
+	echo "$myname: Not accepting signatures from keys without a trust path, aborting."
+	echo "$myname: Please create a trust path. If you're confident that this key belongs"
+	echo "$myname: to the claimed user, sign it via 'gpg --sign-key $fp'."
 	exit 1
     fi
 fi
@@ -122,7 +124,7 @@ fi
 # Verify key to be one of the accepted keys, if specified:
 
 error_fprs() {
-    echo "$0: error: expected exactly 1 entry for '$1' in:"
+    echo "$myname: error: expected exactly 1 entry for '$1' in:"
     cat "$tagbase"/fprs
     exit 1
 }
@@ -136,13 +138,13 @@ if [ -n "$acceptkeys" ]; then
                 exit
            } 
            END { exit $exitcode }' < "$tagbase"/out); then
-	echo "$0: could not find key id in gpg output"
+	echo "$myname: could not find key id in gpg output"
 	exit 1
     fi
     
     # retrieve fingerprints for this key:
     if ! gpg --fingerprint --with-colons "$id" > "$tagbase"/fprs; then
-	echo "$0: failed to retrieve fingerprints for key '$id'"
+	echo "$myname: failed to retrieve fingerprints for key '$id'"
 	exit 1
     fi
 
@@ -161,7 +163,7 @@ if [ -n "$acceptkeys" ]; then
             my @accepted= grep { $k{$_} } map { chomp; (split /:/)[9] } grep { /^fpr:/ } <STDIN>;
             exit (@accepted ? 0 : 1)
     ' < "$tagbase"/fprs; then
-	echo "$0: key id '$id' does not resolve into any fingerprint that is contained in the list: $acceptkeys"
+	echo "$myname: key id '$id' does not resolve into any fingerprint that is contained in the list: $acceptkeys"
 	exit 1
     fi
 fi
