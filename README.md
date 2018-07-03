@@ -44,6 +44,20 @@ commits leading up to one that `verify-sig` confirmed as OK are not
 assured to be pristine. For this, Git itself has to move to a more
 secure hashing algorithm.
 
+There are a couple additional utilities bundled with the repository:
+
+* `git-tag-hashed $tag` shows `$tag:$sha256sum_of_tag_message`,
+    i.e. gives a string that uniquely identifies the files to be
+    checked out in a more secure way than a Git sha1 would. (More
+    precisely the hash is formed from the tag message excluding any
+    GPG signature, if any.)
+
+* `checkout-signed $tag:$sha256sum_of_tag_message` takes a string as
+    printed by `git-tag-hashed` and checks out and verifies the
+    identified files.
+
+* (`take-while-re` is used by `git-tag-hashed`.)
+
 
 ## Usage
 
