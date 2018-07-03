@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -euo pipefail
+IFS=
+
+myname=$(basename "$0")
+
+usage() {
+    echo "usage: $myname tagname:hash"
+    echo
+    echo "  tagname:hash is in the same format as printed by git-tag-hashed"
+    echo "  \$tagname."
+    echo
+    echo "  check out \$tagname after making sure its hash is the given hash,"
+    echo "  or if the currently checked-out revision is a descendent of "
+    echo "  the tag with \$tagname, leave it untouched (the thought is that "
+    echo "  these are local changes, and that they make the source newer"
+    echo "  than the requested version, hence OK)."
+    echo "  If checking out \$tagname, it creates a branch named _\$tagname,"
+    echo "  and first adds and commit any local changes."
+    echo
+    exit 1
+}
+
+die () {
+    echo "$myname: $@" >&2
+    exit 1
+}
+
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage
+fi
+
+tagname_and_hash="$1"
+if ! echo "$tagname_and_hash" | grep -q : ; then
+    die "argument does not contain a colon"
+fi
+
+tagname=$(echo "$tagname_and_hash" | sed 's/:.*//')
+if [ -z "$tagname" ]; then
+    die "empty tagname"
+fi
+qtagname=$(echo -n "$tagname" | perl -we 'local $/; $str= <STDIN>; print quotemeta $str or die')
+if ! [ "$qtagname" = "$tagname" ]; then
+    # alternatively, also carefully avoid any meta characters handled
+    # by Git
+    die "tag name '$tagname' contains special characters"
+fi
+
+hash=$(echo "$tagname_and_hash" | perl -wn0e 's/^.*?://s ; print')
+if echo "$hash" | grep -q : ; then
+    die "argument contains more than one colon"
+fi
+hashlen=$(echo -n "$hash" | wc -c)
+if [ "$hashlen" -ne 64 ]; then
+    die "length of given hash is not 64, but $hashlen"
+fi
+
+
+
+ver=$(git describe)
+
+tagname_and_hash2=$(git-tag-hashed "$tagname")
+
+if ! [ "$tagname_and_hash" = "$tagname_and_hash2" ]; then
+    die "tag in repository yields a different hash: $tagname_and_hash2"
+fi
+
+
+if echo "$ver" | egrep -q ^"$qtagname"-; then
+    echo "The checked out revision, '$ver', is a descendent of '$tagname', leaving unchanged" >&2
+else
+    if ! [ "$ver" = "$tagname" ]; then
+	git add .
+	git commit -a -m "$(
+    echo '($myname)'
+    echo
+    g-l || true
+)" || true
+	gtag "checkout_signed" || true
+	git checkout -B _"$tagname" "$tagname"
+    fi
+    /opt/chj/git-sign/bin/verify-sig "$tagname"
+fi
