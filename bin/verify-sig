@@ -209,7 +209,7 @@ grep -A9999999 -E '^\$ git ls-files -z \|.* sha256sum' < "$tagbase"/tagmessage >
 hashes=`mktemp`
 tail -n+2 < "$hashes1" > "$hashes"
 
-if sha256sum -c --strict "$hashes"; then
+if sha256sum -c --warn --strict "$hashes"; then
     sigs=OK
 else
     sigs="NOT OK (differences see above)"
