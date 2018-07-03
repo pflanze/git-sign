@@ -24,11 +24,15 @@ usage () {
     echo "    --require-accept-keys"
     echo "         fail unless VERIFY_SIG_ACCEPT_KEYS or --accept-keys is"
     echo "         given."
+    echo "    --require-trust-path"
+    echo "         fail if there is no trust path to the key that made"
+    echo "         the signature. This is the default if VERIFY_SIG_ACCEPT_KEYS"
+    echo "         is not set and no --accept-key option was given."
     echo "    --no-require-trust-path"
     echo "         do not fail if there is no trust path to the key that made"
-    echo "         the signature. Only use when also using VERIFY_SIG_ACCEPT_KEYS"
-    echo "         or --accept-keys, or when rigidly controlling which keys are"
-    echo "         added to the keyrings."
+    echo "         the signature. This is the default if VERIFY_SIG_ACCEPT_KEYS"
+    echo "         is set or --accept-keys is given. Otherwise only use if"
+    echo "         strictly controlling which keys are added to the keyrings!"
     exit 1
 }
 
@@ -36,7 +40,7 @@ usage () {
 unset tagname
 acceptkeys=${VERIFY_SIG_ACCEPT_KEYS-}
 requireacceptkeys=0
-require_trust_path=1
+require_trust_path=undef
 
 while [ "${#@}" -gt 0 ]; do
     case "$1" in
@@ -51,6 +55,10 @@ while [ "${#@}" -gt 0 ]; do
 	--require-accept-keys)
 	    shift
 	    requireacceptkeys=1
+	    ;;
+	--require-trust-path)
+	    shift
+	    require_trust_path=1
 	    ;;
 	--no-require-trust-path)
 	    shift
@@ -74,6 +82,15 @@ if [ "$requireacceptkeys" -ne 0 ]; then
     if [ -z "$acceptkeys" ]; then
 	echo "$myname: --require-accept-keys was given but neither VERIFY_SIG_ACCEPT_KEYS nor --accept-keys list any keys" # >&2
 	exit 1
+    fi
+fi
+
+# set defaults for require_trust_path (i.e. if not set already, i.e. non-default)
+if [ "$require_trust_path" = undef ]; then
+    if [ -z "$acceptkeys" ]; then
+	require_trust_path=1
+    else
+	require_trust_path=0
     fi
 fi
 
