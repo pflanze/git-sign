@@ -22,7 +22,9 @@ tagname="$1"
 
 tag=$(git cat-file -p "$tagname")
 
+set +o pipefail
 header=$( echo "$tag" | take-while-re --invert '^$' )
+set -o pipefail
 
 if echo "$header" | egrep -q '^tag '; then
 
