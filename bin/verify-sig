@@ -6,6 +6,10 @@ IFS=
 
 #set -x
 
+# sorry, have to ignore your language settings to get predictable
+# output from gpg (and enlish is used in this script anyway)
+export LANG=C
+
 myname=$(basename "$0")
 
 usage () {
@@ -111,8 +115,7 @@ echo "(1) Verifying PGP signature"
 (
     set -euo pipefail
     cd "$tagbase"
-    # sorry, have to ignore your language settings
-    LANG=C gpg -v --verify tagmessage.sig 2>&1 | tee out
+    gpg -v --verify tagmessage.sig 2>&1 | tee out
 )
 
 if egrep -q "digest algorithm (SHA1|MD5)\b" "$tagbase"/out; then
