@@ -42,6 +42,8 @@ usage () {
 }
 
 
+orig_args="$@"
+
 unset tagname
 acceptkeys=${VERIFY_SIG_ACCEPT_KEYS-}
 requireacceptkeys=0
@@ -136,8 +138,13 @@ if [ "$require_trust_path" -ne 0 ]; then
     if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
 	fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
 	echo "$myname: Not accepting signatures from keys without a trust path, aborting."
-	echo "$myname: Please create a trust path. If you're confident that this key belongs"
-	echo "$myname: to the claimed user, sign it via 'gpg --sign-key $fp'."
+	echo "$myname: Please create a trust path. If you're confident that this key"
+	echo "$myname: belongs to the claimed user, sign it via"
+        echo "$myname:   gpg --sign-key $fp"
+        echo "$myname: Alternatively, set "
+        echo "$myname:   VERIFY_SIG_ACCEPT_KEYS=$fp"
+        echo "$myname: or run"
+        echo "$myname:   $myname $orig_args --accept-keys $fp"
 	exit 1
     fi
 fi
