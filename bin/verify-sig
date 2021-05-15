@@ -7,7 +7,7 @@ IFS=
 #set -x
 
 # sorry, have to ignore your language settings to get predictable
-# output from gpg (and enlish is used in this script anyway)
+# output from gpg (and English is used in this script anyway)
 export LANG=C
 export LC_ALL=C
 
