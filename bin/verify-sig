@@ -112,7 +112,7 @@ git cat-file tag "$tagname" > "$tagcontents"
 tagbase=$(mktemp -d)
 grep -A9999 -E '^-----BEGIN PGP SIGNATURE-----$' < "$tagcontents" > "$tagbase"/tagmessage.sig
 siglen=$(wc -l < "$tagbase"/tagmessage.sig)
-tac < "$tagcontents" | tail -n+$(( $siglen + 1 )) | tac > "$tagbase"/tagmessage
+tac < "$tagcontents" | tail -n+$(( siglen + 1 )) | tac > "$tagbase"/tagmessage
 
 echo "(1) Verifying PGP signature"
 (
@@ -136,7 +136,7 @@ fi
 if [ "$require_trust_path" -ne 0 ]; then
     # Don't accept good signatures from keys without a trust path
     if egrep -q "^gpg: WARNING:" "$tagbase"/out; then
-	fp=$(cat "$tagbase"/out | perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}')
+	fp=$(perl -wne 'if (($k)=m/Primary key fingerprint: ([A-F0-9 ]+)/) { $k=~ s/\s//sg; print $k or die; exit}' < "$tagbase"/out)
 	echo "$myname: Not accepting signatures from keys without a trust path, aborting."
 	echo "$myname: Please create a trust path. If you're confident that this key"
 	echo "$myname: belongs to the claimed user, sign it via"
@@ -177,12 +177,12 @@ if [ -n "$acceptkeys" ]; then
     fi
 
     # keys might not have a UID, hence also test for 'tru' field (XX: check spec for fields)
-    if [ "$(grep ^tru: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
+    if [ "$(grep -c ^tru: "$tagbase"/fprs)" -ne 1 ]; then
 	error_fprs tru
     fi
     # Is it OK to accept keys without uid? Thus, not requiring uid,
     # but check for pub instead.
-    if [ "$(grep ^pub: "$tagbase"/fprs | wc -l)" -ne 1 ]; then
+    if [ "$(grep -c ^pub: "$tagbase"/fprs)" -ne 1 ]; then
 	error_fprs pub
     fi
 
