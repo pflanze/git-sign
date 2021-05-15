@@ -36,7 +36,7 @@ trap exitnote EXIT
 
 tagname="$1"
 
-msg=`mktemp`
+msg=$(mktemp)
 
 if [ $# -eq 2 ]; then
     message="$2"
@@ -49,7 +49,7 @@ else
     # Also, tmp file handling by editor?
 fi
 
-fullmsg=`mktemp`
+fullmsg=$(mktemp)
 
 exit1isOK () {
     (
